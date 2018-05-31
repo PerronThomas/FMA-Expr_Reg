@@ -1,4 +1,5 @@
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
@@ -37,12 +38,16 @@ void parser(){
 		if (caractere == '/'){
 			commentaire = (commentaire + 1)%2;
 		}
-
+		//defini l'expression reguliere
 		else if (caractere == ';'){
 			input = mot;
-			break;
+			mot = "";
 		}
-
+		//defini la taille Memoire
+		else if (caractere == ':'){
+			tailleMemoire = atoi(mot.c_str());
+			mot = "";
+		}
 		else if (isalnum(caractere) or caractere == '!' or caractere == '?' or caractere == '*' or caractere == '+' or caractere == '|' or caractere == '[' or caractere == ']' or caractere == '{' or caractere == '}' or caractere == '(' or caractere == ')' or caractere == '^' or caractere == '.'){
 			if (commentaire == 0){
 				mot += caractere;
@@ -279,7 +284,7 @@ void terminal(string expr){
 // creation des etats et transitions pour un Terminal sans modification de memoire
 	int intExpr = atoi(expr.c_str());
 	if (intExpr > tailleMemoire){
-		tailleMemoire = intExpr;
+		tailleMemoire = intExpr+1;
 	}
 	ofstream fichier("transition.txt", ios::out | ios::app);
 	if(fichier){
@@ -311,7 +316,7 @@ void terminalWrite(string expr){
 // creation des etats et transitions pour un Terminal avec modification de memoire
 	int intExpr = atoi(expr.c_str());
 	if (intExpr > tailleMemoire){
-		tailleMemoire = intExpr;
+		tailleMemoire = intExpr+1;
 	}
 	ofstream fichier("transition.txt", ios::out | ios::app);
 	if(fichier){
@@ -456,30 +461,75 @@ int expression(string expr){
 		string mot = "";
 		vector<int> etatInitial;
 		vector<int> etatFinal;
-		while (indice < expr.size()){
-			if (expr[indice] == '.' or expr[indice] == ']'){				
+		// [^...]
+		if (expr[0] == '^'){
+			expr.erase(expr.begin()+0);
+			// creation d'une liste correspondant a toute les cases memoires
+			vector<int> list;
+			while (indice < tailleMemoire){
+				list.push_back(indice);
+				indice++;
+			}
+			// suppression de case de la liste 
+			indice = 0;
+			while (indice < expr.size()){
+				if (expr[indice] == '.' or expr[indice] == ']'){
+					int indiceMot = 0;
+					while (indiceMot < list.size()){
+						if (atoi(mot.c_str()) == list[indiceMot]){
+							list.erase(list.begin()+indiceMot);
+						}
+						indiceMot++;
+					}
+					mot = "";
+				}
+				else{
+					mot += expr[indice];
+				}
+				indice++;
+			}
+			// creation des cases restantes
+			indice = 0;
+			while (indice < list.size()){
+				ostringstream convert;
+				convert << list[indice];
+				mot = convert.str(); 
+				cout << "Mot " << mot << endl;				
 				etatInitial.push_back(expression(mot));
 				etatFinal.push_back(compteurEtat-1);
-				mot = "";
+				indice++;
 			}
-			else{
-				mot += expr[indice];
+		}
+		// [...]
+		else {
+			while (indice < expr.size()){
+				if (expr[indice] == '.' or expr[indice] == ']'){				
+					etatInitial.push_back(expression(mot));
+					etatFinal.push_back(compteurEtat-1);
+					mot = "";
+				}
+				else{
+					mot += expr[indice];
+				}
+				indice++;
 			}
-			indice++;
 		}
 		multiIn(etatInitial);
 		concat(etatFinalPrec,compteurEtat-1);
 		multiOut(etatFinal);
+		// [...]*
 		if (expr[expr.size()-1] == '*'){
 			etoile(compteurEtat-2);			
 			crochet = 0;
 			return compteurEtat-2;
 		}
+		// [...]?
 		else if (expr[expr.size()-1] == '?'){
 			optionnel(compteurEtat-2);			
 			crochet = 0;
 			return compteurEtat-2;
 		}
+		// [...]+
 		else if (expr[expr.size()-1] == '+'){
 			int etatFinalPrec = compteurEtat-1;
 			indice = 0;
