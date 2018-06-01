@@ -16,7 +16,11 @@ vector<int> indicePar;
 int compteurEtat = 1;
 int compteurTransition = 1;
 int tailleMemoire = 0;
+string memoire;
 int crochet = 0;
+const char* fileAutomate = "automate.txt";
+const char* fileEtat = "etat.txt";
+const char* fileTransition = "transition.txt";
 
 
 void creation(string input);
@@ -45,10 +49,11 @@ void parser(){
 		}
 		//defini la taille Memoire
 		else if (caractere == ':'){
-			tailleMemoire = atoi(mot.c_str());
+			memoire = mot;
+			tailleMemoire = memoire.size();
 			mot = "";
 		}
-		else if (isalnum(caractere) or caractere == '!' or caractere == '?' or caractere == '*' or caractere == '+' or caractere == '|' or caractere == '[' or caractere == ']' or caractere == '{' or caractere == '}' or caractere == '(' or caractere == ')' or caractere == '^' or caractere == '.'){
+		else if (isalnum(caractere) or caractere == '!' or caractere == '#' or caractere == ',' or caractere == '?' or caractere == '*' or caractere == '+' or caractere == '|' or caractere == '[' or caractere == ']' or caractere == '{' or caractere == '}' or caractere == '(' or caractere == ')' or caractere == '^' or caractere == '.'){
 			if (commentaire == 0){
 				mot += caractere;
 			}
@@ -81,8 +86,10 @@ void parser(){
 ///// OUTFILE /////
 ///////////////////
 void outFile(int taille){
-	string memoire = string(taille,'#');
-	ofstream fichier1("automate.txt", ios::out | ios::trunc);
+	if (memoire == ""){
+		memoire = string(taille,'#');
+	}
+	ofstream fichier1(fileAutomate);
 	if(fichier1){
 		ifstream fichier2("etat.txt", ios::in);
 		if(fichier2){
@@ -158,7 +165,7 @@ string cut(string expr, int indice){
 //////////////////
 void etoile(int etatInitial){
 //transition *
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		fichier << "Transition" << compteurTransition << ",Etat" << compteurEtat-1 << ",Etat" << etatInitial << ",-1;" << endl;
 		compteurTransition++;
@@ -175,7 +182,7 @@ void etoile(int etatInitial){
 /////////////////////
 void optionnel(int etatInitial){
 //transition ?
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		fichier << "Transition" << compteurTransition << ",Etat" << etatInitial << ",Etat" << compteurEtat-1 << ",-1;" << endl;
 		compteurTransition++;
@@ -191,7 +198,7 @@ void optionnel(int etatInitial){
 /////////////////////
 void concat(int etatInitial,int etatFinal){
 //transition .
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		fichier << "Transition" << compteurTransition << ",Etat" << etatInitial << ",Etat" << etatFinal << ",-1;" << endl;
 		compteurTransition++;
@@ -207,7 +214,7 @@ void concat(int etatInitial,int etatFinal){
 //////////////////////
 int parenthese(){
 //creation d'un etat pour l'ouverture ou la fermeture de parenthese
-	ofstream fichier("etat.txt", ios::out | ios::app);
+	ofstream fichier(fileEtat, ios::out | ios::app);
 	if(fichier){
 		fichier << "Etat" << compteurEtat << ",false,false,-1;" << endl;
 		compteurEtat++;
@@ -224,7 +231,7 @@ int parenthese(){
 ////////////////////
 void multiIn(vector<int> etatInitial){
 //creation d'un etat relié a tous les etats initiaux pour une transition | ou [...]
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		int indice = 0;
 		while (indice < etatInitial.size()){
@@ -237,7 +244,7 @@ void multiIn(vector<int> etatInitial){
 	else{
 		cerr << "Impossible d'ouvrir le fichier !" << endl;
 	}
-	ofstream fichier1("etat.txt", ios::out | ios::app);
+	ofstream fichier1(fileEtat, ios::out | ios::app);
 	if(fichier1){
 		fichier1 << "Etat" << compteurEtat << ",false,false,-1;" << endl;
 		compteurEtat++;
@@ -253,7 +260,7 @@ void multiIn(vector<int> etatInitial){
 /////////////////////
 void multiOut(vector<int> etatFinal){
 //creation d'un etat relié a tous les etats finaux pour une transition | ou [...]
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		int indice = 0;
 		while (indice < etatFinal.size()){
@@ -266,7 +273,7 @@ void multiOut(vector<int> etatFinal){
 	else{
 		cerr << "Impossible d'ouvrir le fichier !" << endl;
 	}
-	ofstream fichier1("etat.txt", ios::out | ios::app);
+	ofstream fichier1(fileEtat, ios::out | ios::app);
 	if(fichier1){
 		fichier1 << "Etat" << compteurEtat << ",false,false,-1;" << endl;
 		compteurEtat++;
@@ -277,16 +284,35 @@ void multiOut(vector<int> etatFinal){
 	}
 }
 
+
+/////////////////////////////////
+///// Verification Terminal /////
+/////////////////////////////////
+string verificationTerminal(string expr){
+// verifie si un terminal est bien composé uniquement de Chiffre( voir le corrige)
+	int indice=0;
+	while (indice< expr.size()){
+		if (isdigit(expr[indice]) == false){
+			cout << "Un terminal est incorrecte : " << expr << endl;
+			expr.erase(expr.begin()+indice);
+		}
+		indice++;
+	}
+	return expr;
+}
+
 ////////////////////
 ///// Terminal /////
 ////////////////////
 void terminal(string expr){
 // creation des etats et transitions pour un Terminal sans modification de memoire
+	expr = verificationTerminal(expr);
 	int intExpr = atoi(expr.c_str());
 	if (intExpr > tailleMemoire){
 		tailleMemoire = intExpr+1;
+		cout << "Attention la taille de la memoire vient d'etre augmente a "<< tailleMemoire << endl;
 	}
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		fichier << "Transition" << compteurTransition << ",Etat" << compteurEtat << ",Etat" << compteurEtat+1 << "," << expr << ";" << endl;
 		compteurTransition++;
@@ -295,7 +321,7 @@ void terminal(string expr){
 	else{
 		cerr << "Impossible d'ouvrir le fichier !" << endl;
 	}
-	ofstream fichier1("etat.txt", ios::out | ios::app);
+	ofstream fichier1(fileEtat, ios::out | ios::app);
 	if(fichier1){
 		fichier1 << "Etat" << compteurEtat << ",false,false,-1;" << endl;
 		compteurEtat++;			
@@ -314,11 +340,13 @@ void terminal(string expr){
 ////////////////////////////
 void terminalWrite(string expr){
 // creation des etats et transitions pour un Terminal avec modification de memoire
+	verificationTerminal(expr);
 	int intExpr = atoi(expr.c_str());
 	if (intExpr > tailleMemoire){
 		tailleMemoire = intExpr+1;
+		cout << "Attention la taille de la memoire vient d'etre augmente a "<< tailleMemoire << endl;
 	}
-	ofstream fichier("transition.txt", ios::out | ios::app);
+	ofstream fichier(fileTransition, ios::out | ios::app);
 	if(fichier){
 		fichier << "Transition" << compteurTransition << ",Etat" << compteurEtat << ",Etat" << compteurEtat+1 << "," << expr << ";" << endl;
 		compteurTransition++;
@@ -327,7 +355,7 @@ void terminalWrite(string expr){
 	else{
 		cerr << "Impossible d'ouvrir le fichier !" << endl;
 	}
-	ofstream fichier1("etat.txt", ios::out | ios::app);
+	ofstream fichier1(fileEtat, ios::out | ios::app);
 	if(fichier1){
 		fichier1 << "Etat" << compteurEtat << ",false,false," << expr << ";" << endl;
 		compteurEtat++;			
@@ -473,7 +501,7 @@ int expression(string expr){
 			// suppression de case de la liste 
 			indice = 0;
 			while (indice < expr.size()){
-				if (expr[indice] == '.' or expr[indice] == ']'){
+				if (expr[indice] == ',' or expr[indice] == ']'){
 					int indiceMot = 0;
 					while (indiceMot < list.size()){
 						if (atoi(mot.c_str()) == list[indiceMot]){
@@ -503,10 +531,19 @@ int expression(string expr){
 		// [...]
 		else {
 			while (indice < expr.size()){
-				if (expr[indice] == '.' or expr[indice] == ']'){				
-					etatInitial.push_back(expression(mot));
-					etatFinal.push_back(compteurEtat-1);
-					mot = "";
+				if (expr[indice] == ',' or expr[indice] == ']'){
+					if (expr[indice-1] == '!'){
+						terminalWrite(mot);
+						etatInitial.push_back(compteurEtat-2);
+						etatFinal.push_back(compteurEtat-1);
+						mot = "";
+					}
+					else{	
+						terminal(mot);
+						etatInitial.push_back(compteurEtat-2);
+						etatFinal.push_back(compteurEtat-1);
+						mot = "";
+					}
 				}
 				else{
 					mot += expr[indice];

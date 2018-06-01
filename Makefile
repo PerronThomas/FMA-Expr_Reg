@@ -1,10 +1,10 @@
-all : Expression input.txt automate.txt
+all : automate.txt
 
-Expression : main.cpp 
+Expression : main.cpp
 	rm -f output.txt
 	g++ $^ -o $@
 
-automate.txt : Expression
+automate.txt : Expression input.txt
 	./$^
 
 clean:
