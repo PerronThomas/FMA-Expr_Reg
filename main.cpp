@@ -420,8 +420,9 @@ int expression(string expr){
 		else if (expr[indiceSave] == '|'){
 			vector<int> etatInitial;
 			etatInitial.push_back(in);
+			etatInitial.push_back(compteurEtat);
 			vector<int> etatFinal;
-			etatFinal.push_back(compteurEtat-1);
+			etatFinal.push_back(out);
 			expr.erase(expr.begin()+0,expr.begin()+indiceSave+1);
 			int indice = 0;
 			while (isdigit(expr[indice])){
