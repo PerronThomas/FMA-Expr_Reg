@@ -395,29 +395,28 @@ int expression(string expr){
 			indice++;
 		}
 		int in = parenthese();
-		exprPar.erase(exprPar.begin()+0);		
 		exprPar.erase(exprPar.end()-1);
-		exprPar.erase(exprPar.end()-1);
+		if (exprPar[exprPar.size()] == ')'){
+			exprPar.erase(exprPar.begin()+0);
+			exprPar.erase(exprPar.end()-1);
+		}
+		else{
+			exprPar.erase(exprPar.end()-1);
+		}
 		creation(exprPar);
 		int out = parenthese();
 		concat(compteurEtat-2,out);
 		if (expr[indiceSave-1] == '*'){
-			concat(etatFinalPrec,in);
 			concat(out,in);
-			return out;
 		}
 		else if (expr[indiceSave-1] == '?'){
-			concat(etatFinalPrec,in);
 			optionnel(etatFinalPrec);
-			return out;
 		}
 		else if (expr[indiceSave-1] == '+'){
-			concat(etatFinalPrec,in);
 			creation(exprPar);
 			etoile(compteurEtat-4);
-			return out;
 		}
-		else if (expr[indiceSave] == '|'){
+		if (expr[indiceSave] == '|'){
 			vector<int> etatInitial;
 			etatInitial.push_back(in);
 			etatInitial.push_back(compteurEtat);
@@ -480,6 +479,10 @@ int expression(string expr){
 			concat(etatFinalPrec,compteurEtat-1);				
 			multiOut(etatFinal);
 			return compteurEtat-2;
+		}
+		else{
+			concat(etatFinalPrec,in);
+			return out;
 		}
 	}
 	// [ ... ] ou [...]* ou [...]+ ou [...]? 
